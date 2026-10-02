@@ -8,11 +8,14 @@ import sys
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
-        print("usage: uv run main.py <path-to-contract.pdf>", file=sys.stderr)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    use_llm = "--llm" in sys.argv[1:]
+
+    if not args:
+        print("usage: uv run main.py [--llm] <path-to-contract.pdf>", file=sys.stderr)
         return 2
 
-    pdf_path = sys.argv[1]
+    pdf_path = args[0]
     try:
         text = extract_text(pdf_path)
     except FileNotFoundError:
@@ -20,6 +23,11 @@ def main() -> int:
         return 1
 
     results: list[CheckResult] = run_checks(text)
+    if use_llm:
+        from .checks import llm_contract_check
+
+        results.append(llm_contract_check(text))
+
     for result in results:
         print(result)
 

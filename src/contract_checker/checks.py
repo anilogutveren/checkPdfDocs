@@ -46,8 +46,9 @@ def run_checks(text: str) -> list[CheckResult]:
 
     return results
 
+
 def llm_contract_check(text: str, threshold: float = 0.5) -> CheckResult:
-     """Ask the local Nimble model (via TypeSafe) whether the text reads as a contract.
+    """Ask the local Nimble model (via TypeSafe) whether the text is a contract.
 
     The match score returned by the model is treated as a 0-1 plausibility
     score. Any failure to reach the model is reported as a non-passing result
@@ -59,30 +60,32 @@ def llm_contract_check(text: str, threshold: float = 0.5) -> CheckResult:
 
     Returns:
         A CheckResult for the "llm" check.
-     """
+    """
     from typesafe_sdk import Noul, TypeSafeClient
 
     prompt = (
-         "Read the text below. If it reads like a legal contract or agreement, "
-         "match it. Output a single word."
-     )
+        "Read the text below. If it reads like a legal contract or agreement, "
+        "match it. Output a single word."
+    )
     try:
         with TypeSafeClient(timeout=180.0) as client:
             result = client.system_one(
-                 state=text,
-                 questions={"is_contract": Noul(instructions=prompt)},
-              )
+                state=text,
+                questions={"is_contract": Noul(instructions=prompt)},
+            )
         score = float(result.answers["is_contract"].noul)
-     except Exception as exc:  # pragma: no cover - network/model errors
+    except Exception as exc:    # pragma: no cover - network/model errors
         return CheckResult(
-             name="llm",
-             passed=False,
-             message=f"LLM check unavailable ({type(exc).__name__}: {exc})",
-          )
+            name="llm",
+            passed=False,
+            message=f"LLM check unavailable ({type(exc).__name__}: {exc})",
+        )
 
     return CheckResult(
-         name="llm",
-         passed=score >= threshold,
-         message=f"Nimble contract-plausibility score {score:.2f} "
-         f"(threshold {threshold:.2f}).",
-      )
+        name="llm",
+        passed=score >= threshold,
+        message=(
+            f"Nimble contract-plausibility score {score:.2f} "
+            f"(threshold {threshold:.2f})."
+        ),
+    )
