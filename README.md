@@ -1,4 +1,4 @@
-# contract-checker
+# Smart PDF Analyser
 
 A tool for checking PDF contract files. It extracts the text of a contract PDF
 and runs checks over it:
@@ -9,39 +9,45 @@ and runs checks over it:
   Ollama and reached through the **TypeSafe SDK**, whether the text reads like
   a contract, returning a 0-1 plausibility score.
 
-The layout is a standard `uv` project with a `src/` package:
+The project now includes both a command-line interface and a modern web UI
+built with **React + TypeScript**, **shadcn/ui**, **Tailwind CSS** and a
+**FastAPI** backend.
 
 ```
-contract-checker/
+checkPdfProject/
+├── main.py                          # CLI shim
+├── ui.py                            # one-command UI launcher
 ├── pyproject.toml
 ├── uv.lock
-├── main.py                    # thin shim so `uv run main.py` keeps working
 ├── src/
-│    └── contract_checker/
-│        ├── __init__.py
-│        ├── main.py           # CLI entry point
-│        ├── pdf.py            # PDF text extraction (PyMuPDF)
-│        ├── checks.py         # heuristic + LLM checks
-│        └── models.py         # CheckResult data model
+│   └── contract_checker/
+│       ├── __init__.py
+│       ├── main.py                  # CLI entry point
+│       ├── api.py                   # FastAPI backend
+│       ├── checks.py                # heuristic + LLM checks
+│       ├── pdf.py                   # PDF text extraction (PyMuPDF)
+│       └── models.py                # CheckResult data model
+├── frontend/                        # React UI
 ├── documents/
-│    └── contract.pdf
+│   └── contract.pdf
 └── tests/
 ```
 
 ## Requirements
 
 - [uv](https://docs.astral.sh/uv/) — the Python package/project manager
+- [Node.js](https://nodejs.org/) 20+ and npm — for the React frontend
 - [Ollama](https://ollama.com/) 0.35 or later, with the `nimble` model pulled
 - Python 3.14
 
 ## Setup
 
 ```bash
-uv add typesafe-sdk pymupdf        # core deps (already added)
-uv add --dev pytest               # test deps
+uv sync
 
-# Ollama must be running, and the model pulled:
-ollama pull nimble
+# Frontend dependencies (only needed once or when packages change)
+cd frontend
+npm install
 ```
 
 Point the TypeSafe SDK at your local Ollama instance. The API key is a
@@ -53,7 +59,7 @@ export TYPESAFE_API_KEY=ollama
 export TYPESAFE_DEFAULT_MODEL=nimble
 ```
 
-## Usage
+## Command-line usage
 
 Heuristic checks only (no network, fast):
 
@@ -61,22 +67,29 @@ Heuristic checks only (no network, fast):
 uv run main.py documents/contract.pdf
 ```
 
-Include the LLM check against local Nimble (slower on first run while the 9B
-model loads):
+Include the LLM check against local Nimble:
 
 ```bash
 uv run main.py --llm documents/contract.pdf
 ```
 
-Example output:
+## Web UI usage
 
+Launch the development UI (FastAPI backend + Vite frontend + browser):
+
+```bash
+uv run ui.py
 ```
-[PASS] section: Required section(s) found.
-[PASS] section: Required section(s) found.
-[PASS] section: Required section(s) found.
-[PASS] length: Contract length: 93 words (minimum 50).
-[PASS] llm: Nimble contract-plausibility score 1.00 (threshold 0.50).
+
+Build the production frontend and serve it through FastAPI on a single port:
+
+```bash
+uv run ui.py --serve
 ```
+
+In the UI, drag a PDF onto the drop zone (or click to browse), optionally
+enable **Use LLM**, then click **Scan & Analyse**. Results are shown on the
+right side.
 
 ## Tests
 
@@ -84,6 +97,6 @@ Example output:
 uv run pytest
 ```
 
-The tests exercise text extraction and the heuristic checks only, so they run
-without a model. The `--llm` path hits Ollama and is not part of the test
-suite.
+The tests exercise text extraction, the heuristic checks, and the FastAPI
+`/analyze` endpoint. The `--llm` path hits Ollama and is not part of the
+test suite.

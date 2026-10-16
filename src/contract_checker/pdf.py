@@ -17,3 +17,17 @@ def extract_text(pdf_path: str) -> str:
     with pymupdf.open(pdf_path) as document:
         pages = [page.get_text() for page in document]
     return "\n".join(pages)
+
+
+def extract_text_from_bytes(pdf_bytes: bytes) -> str:
+    """Extract the full text content of a PDF from an in-memory bytes buffer.
+
+    Args:
+        pdf_bytes: Raw bytes of a PDF file.
+
+    Returns:
+        The concatenated text of all pages, separated by page breaks.
+    """
+    with pymupdf.open(stream=pdf_bytes, filetype="pdf") as document:
+        pages = [page.get_text() for page in document]
+    return "\n".join(pages)

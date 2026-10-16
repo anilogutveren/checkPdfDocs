@@ -5,6 +5,17 @@ from __future__ import annotations
 from .models import CheckResult
 
 
+_MAX_LLM_BYTES = 60_000
+
+
+def _truncate_to_bytes(text: str, max_bytes: int = _MAX_LLM_BYTES) -> str:
+    """Return the start of *text* truncated to at most *max_bytes* UTF-8 bytes."""
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
 def _require(section_keywords: list[str], text: str) -> CheckResult:
     """Pass if at least one keyword appears in the text (case-insensitive)."""
     lowered = text.lower()
@@ -67,10 +78,11 @@ def llm_contract_check(text: str, threshold: float = 0.5) -> CheckResult:
         "Read the text below. If it reads like a legal contract or agreement, "
         "match it. Output a single word."
     )
+    safe_text = _truncate_to_bytes(text)
     try:
         with TypeSafeClient(timeout=180.0) as client:
             result = client.system_one(
-                state=text,
+                state=safe_text,
                 questions={"is_contract": Noul(instructions=prompt)},
             )
         score = float(result.answers["is_contract"].noul)
