@@ -3,6 +3,7 @@
 from .pdf import extract_text
 from .checks import run_checks
 from .models import CheckResult
+from .tracking import record_analysis
 
 import sys
 
@@ -30,6 +31,10 @@ def main() -> int:
 
     for result in results:
         print(result)
+
+    trace_id = record_analysis(pdf_path, len(text.split()), results)
+    if trace_id:
+        print(f"Logged to MLflow (trace {trace_id}).", file=sys.stderr)
 
     return 0
 

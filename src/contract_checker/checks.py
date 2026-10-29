@@ -100,4 +100,5 @@ def llm_contract_check(text: str, threshold: float = 0.5) -> CheckResult:
             f"Nimble contract-plausibility score {score:.2f} "
             f"(threshold {threshold:.2f})."
         ),
+        score=score,
     )

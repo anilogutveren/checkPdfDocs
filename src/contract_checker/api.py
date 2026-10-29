@@ -11,9 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from .checks import llm_contract_check, run_checks
 from .pdf import extract_text_from_bytes
+from .tracking import record_analysis
 
 
 class CheckResultItem(BaseModel):
@@ -97,9 +99,13 @@ def _make_app() -> FastAPI:
         if use_llm:
             results.append(llm_contract_check(text))
 
+        filename = file.filename or "contract.pdf"
+        word_count = len(text.split())
+        await run_in_threadpool(record_analysis, filename, word_count, results)
+
         return AnalyzeResponse(
-            filename=file.filename or "contract.pdf",
-            word_count=len(text.split()),
+            filename=filename,
+            word_count=word_count,
             use_llm=use_llm,
             results=[
                 CheckResultItem(

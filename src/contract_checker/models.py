@@ -12,6 +12,7 @@ class CheckResult:
     name: str
     passed: bool
     message: str
+    score: float | None = None
 
     def __str__(self) -> str:
         status = "PASS" if self.passed else "FAIL"

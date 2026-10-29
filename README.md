@@ -17,6 +17,7 @@ built with **React + TypeScript**, **shadcn/ui**, **Tailwind CSS** and a
 checkPdfProject/
 ├── main.py                          # CLI shim
 ├── ui.py                            # one-command UI launcher
+├── docker-compose.yml               # local MLflow tracking server
 ├── pyproject.toml
 ├── uv.lock
 ├── src/
@@ -90,6 +91,46 @@ uv run ui.py --serve
 In the UI, drag a PDF onto the drop zone (or click to browse), optionally
 enable **Use LLM**, then click **Scan & Analyse**. Results are shown on the
 right side.
+
+## MLflow (Docker)
+
+A local MLflow 3.17.2 tracking server is defined in `docker-compose.yml`.
+Runs are stored in the `mlflow-data` Docker volume.
+
+```bash
+docker compose up -d
+docker compose ps                                # wait for "healthy"
+export MLFLOW_TRACKING_URI=http://localhost:5001
+```
+
+The UI is at <http://localhost:5001>. The server binds to `127.0.0.1` only;
+set `MLFLOW_PORT` to change the host port (5000 is taken by macOS AirPlay).
+
+Stop it with `docker compose down` (add `-v` to also delete stored runs).
+
+### Tracing and scores
+
+When `MLFLOW_TRACKING_URI` is set, every analysis (CLI and `/analyze`) is
+logged as a trace in the `contract-checker` experiment (override with
+`MLFLOW_EXPERIMENT_NAME`). Only the file name, word count and check results
+are logged — never the contract text. Tracking failures are logged as
+warnings and never break an analysis.
+
+Each trace gets feedback from the `@scorer` functions in
+`src/contract_checker/scoring.py`:
+
+| Scorer            | Value | Meaning                                                        |
+|-------------------|-------|----------------------------------------------------------------|
+| `heuristic_score` | 0-1   | Share of heuristic checks that passed                          |
+| `llm_score`       | 0-1   | Nimble plausibility score (only when `--llm` / Use LLM is on)  |
+| `contract_score`  | 0-1   | Heuristic share, averaged with `llm_score` when available      |
+| `confidence`      | 0-1   | Distance of `contract_score` from the 0.5 threshold, scaled    |
+| `is_contract`     | bool  | `contract_score >= 0.5`                                        |
+
+The same scorers can be passed to `mlflow.genai.evaluate(scorers=...)`.
+
+See [docs/mlflow-experiment-tracking.md](docs/mlflow-experiment-tracking.md)
+for the full guide.
 
 ## Tests
 
