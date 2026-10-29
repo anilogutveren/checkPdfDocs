@@ -135,9 +135,33 @@ for the full guide.
 ## Tests
 
 ```bash
-uv run pytest
+uv run pytest                                   # all tests
+uv run pytest tests/test_sample_orders.py -v    # one file, verbose
+uv run pytest -k pickup                         # tests matching a name
 ```
 
-The tests exercise text extraction, the heuristic checks, and the FastAPI
-`/analyze` endpoint. The `--llm` path hits Ollama and is not part of the
-test suite.
+The tests exercise text extraction, the heuristic checks, scoring, MLflow
+tracking, and the FastAPI `/analyze` endpoint. The `--llm` path hits Ollama
+and is not part of the test suite.
+
+Test traces are always logged to the `contract-checker-tests` experiment
+(override with `MLFLOW_TEST_EXPERIMENT_NAME`), never to `contract-checker`:
+
+- `MLFLOW_TRACKING_URI` set — traces go to that server, so they show up in
+  the MLflow UI:
+
+  ```bash
+  docker compose up -d
+  MLFLOW_TRACKING_URI=http://localhost:5001 uv run pytest tests/test_sample_orders.py -v
+  ```
+
+- `MLFLOW_TRACKING_URI` unset — traces go to a temporary SQLite store, so no
+  Docker server is needed.
+
+To see traces for the sample documents in MLflow, follow
+[Testing with the sample documents](docs/mlflow-experiment-tracking.md#testing-with-the-sample-documents).
+
+`tests/test_sample_orders.py` regenerates the synthetic orders from
+`scripts/generate_sample_orders.py` into a temp folder and compares extraction,
+checks, scores and the API against `tests/fixtures/sample_orders_ground_truth.json`.
+When you change a sample order, update the ground truth file too.

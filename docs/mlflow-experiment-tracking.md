@@ -17,6 +17,8 @@ as before and nothing is sent anywhere.
 - [Offline evaluation](#offline-evaluation)
 - [Code layout](#code-layout)
 - [Testing](#testing)
+- [Testing with the sample documents](#testing-with-the-sample-documents)
+- [Finding traces in MLflow](#finding-traces-in-mlflow)
 - [Troubleshooting](#troubleshooting)
 
 ## How it works
@@ -286,19 +288,154 @@ is_contract/mean      1.0
 
 ## Testing
 
+Run all commands from the project root.
+
 ```bash
-uv run pytest tests/test_scoring.py
+uv run pytest                                   # all tests
+uv run pytest -v                                # one line per test
+uv run pytest tests/test_scoring.py             # one file
+uv run pytest tests/test_sample_orders.py -k pickup          # one sample order
+uv run pytest tests/test_scoring.py::test_is_contract_true_at_threshold   # one test
 ```
 
-The tests cover:
+| File                                                                  | What it tests                                                                        |
+|-----------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`tests/test_contract_checker.py`](../tests/test_contract_checker.py) | Text extraction and heuristic checks                                                 |
+| [`tests/test_api.py`](../tests/test_api.py)                           | FastAPI `/health` and `/analyze`, including invalid uploads                          |
+| [`tests/test_scoring.py`](../tests/test_scoring.py)                   | Scorer formulas, threshold edge case, `llm_score` error, tracking on/off and errors  |
+| [`tests/test_sample_orders.py`](../tests/test_sample_orders.py)       | Sample orders against the ground truth (see below)                                   |
 
-- every scorer formula and the threshold edge case (`0.5` counts as a contract),
-- `llm_score` returning an error when the LLM did not run,
-- tracking turned off when `MLFLOW_TRACKING_URI` is unset,
-- tracking errors being swallowed,
-- a real trace logged to a temporary SQLite store, with all five scores attached.
+`tests/test_sample_orders.py` generates the three sample orders into a
+temporary folder and compares page count, extracted fields, totals, check
+results, scores and the `/analyze` response with
+[`tests/fixtures/sample_orders_ground_truth.json`](../tests/fixtures/sample_orders_ground_truth.json).
+The test ids are the file names without `.pdf`, so `-k transporter`,
+`-k pickup` or `-k minibus` select one order.
 
-No Docker server is needed to run the tests.
+### MLflow during tests
+
+[`tests/conftest.py`](../tests/conftest.py) sets `MLFLOW_TRACKING_URI` for
+**every** test to a temporary SQLite database (`sqlite:///<tmp>/mlflow.db`).
+This means:
+
+- the tracking code runs in every test, just like in production,
+- no Docker server is needed,
+- test traces **never** reach your MLflow server and do not show up in the UI,
+- the temporary database is deleted after the test run.
+
+The LLM check (`--llm`) needs Ollama and is not part of the test suite.
+
+## Testing with the sample documents
+
+Use this to see real traces for the sample documents in the MLflow UI.
+
+### 1. Generate the sample PDFs
+
+```bash
+uv run python scripts/generate_sample_orders.py
+```
+
+This writes three synthetic orders with fake data to `documents/samples/`:
+
+- `sample_order_transporter.pdf`
+- `sample_order_pickup.pdf`
+- `sample_order_minibus.pdf`
+
+The folder is in `.gitignore`. To write somewhere else, pass a folder:
+`uv run python scripts/generate_sample_orders.py /tmp/samples`.
+
+### 2. Start MLflow and set the tracking URI
+
+```bash
+docker compose up -d
+export MLFLOW_TRACKING_URI=http://localhost:5001
+```
+
+### 3. Analyse the samples
+
+With the CLI, one trace per file:
+
+```bash
+for f in documents/samples/*.pdf; do uv run main.py "$f"; done
+```
+
+Each run prints `Logged to MLflow (trace tr-...).` Note the trace ids.
+
+With the API, start the app **in the same shell** (so it sees
+`MLFLOW_TRACKING_URI`), then upload a file from a second shell:
+
+```bash
+uv run ui.py            # shell 1, backend on http://localhost:8000
+```
+
+```bash
+curl -s http://localhost:8000/analyze \
+  -F "file=@documents/samples/sample_order_pickup.pdf;type=application/pdf" \
+  -F use_llm=false
+```
+
+The `type=application/pdf` part is required; the API rejects other content
+types with `422`. You can also drop the files into the web UI instead.
+
+### 4. Expected scores
+
+Without the LLM check, every sample order should show:
+
+| Scorer            | Value  |
+|-------------------|--------|
+| `heuristic_score` | `0.75` |
+| `contract_score`  | `0.75` |
+| `confidence`      | `0.5`  |
+| `is_contract`     | `true` |
+
+`heuristic_score` is `0.75` because the `parties` check does not match the
+German wording of the samples (3 of 4 checks pass).
+
+## Finding traces in MLflow
+
+### In the MLflow UI
+
+1. Open <http://localhost:5001>.
+2. Open **Experiments** and click **contract-checker** (or the name in
+   `MLFLOW_EXPERIMENT_NAME`).
+3. Open the **Traces** tab. Each row is one analysis; the newest is on top.
+   The request column shows the `source` (CLI path or uploaded file name).
+4. Click a row to open the trace:
+   - the `analyze_contract` span shows **Inputs** (`source`, `word_count`)
+     and **Outputs** (the `checks` list),
+   - the **Assessments** panel shows the scores (`heuristic_score`,
+     `contract_score`, `confidence`, `is_contract`, and `llm_score` when the
+     LLM ran), each with its rationale.
+
+If the list is empty, check the [Troubleshooting](#troubleshooting) table.
+
+### From Python
+
+Use the trace id printed by the CLI:
+
+```bash
+uv run python - <<'EOF'
+import mlflow
+
+mlflow.set_tracking_uri("http://localhost:5001")
+trace = mlflow.get_trace("tr-...")            # paste the trace id here
+for assessment in trace.info.assessments:
+    print(assessment.name, assessment.feedback.value)
+EOF
+```
+
+To list the latest traces of the experiment:
+
+```bash
+uv run python - <<'EOF'
+import mlflow
+
+mlflow.set_tracking_uri("http://localhost:5001")
+experiment = mlflow.get_experiment_by_name("contract-checker")
+traces = mlflow.search_traces(experiment_ids=[experiment.experiment_id], max_results=10)
+print(traces["trace_id"].to_string())
+EOF
+```
 
 ## Troubleshooting
 

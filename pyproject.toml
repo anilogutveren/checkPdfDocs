@@ -7,10 +7,10 @@ requires-python = ">=3.14"
 dependencies = [
      "requests>=2.34.2",
      "typesafe-sdk>=0.7.2",
-     "pymupdf>=1.28.2",
-     "fastapi==0.115.0",
-     "uvicorn==0.32.0",
-     "python-multipart==0.0.17",
+     "pymupdf>=2.0",
+     "fastapi==0.162.0",
+     "uvicorn==0.54.0",
+     "python-multipart==0.0.32",
      "mlflow==3.17.2",
 ]
 
@@ -28,4 +28,11 @@ packages = ["src/contract_checker"]
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+# Third-party warnings not fixable in this project (pymupdf SWIG bindings, mlflow's SQLAlchemy usage).
+filterwarnings = [
+    "ignore:builtin type (SwigPyPacked|SwigPyObject|swigvarlink) has no __module__ attribute:DeprecationWarning",
+    "ignore:The ``noload`` loader strategy is deprecated:DeprecationWarning",
 ]

@@ -87,11 +87,8 @@ def test_record_analysis_swallows_tracking_errors(monkeypatch) -> None:
     assert tracking.record_analysis("a.pdf", 10, ALL_PASS) is None
 
 
-def test_record_analysis_logs_trace_with_scores(monkeypatch, tmp_path) -> None:
+def test_record_analysis_logs_trace_with_scores() -> None:
     import mlflow
-
-    monkeypatch.setenv(tracking.TRACKING_URI_ENV, f"sqlite:///{tmp_path / 'mlflow.db'}")
-    mlflow.set_tracking_uri(f"sqlite:///{tmp_path / 'mlflow.db'}")
 
     trace_id = tracking.record_analysis("a.pdf", 10, [*ALL_PASS, CheckResult("llm", True, "x", 0.9)])
 

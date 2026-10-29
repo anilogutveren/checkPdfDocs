@@ -63,7 +63,7 @@ def _make_app() -> FastAPI:
     ) -> AnalyzeResponse:
         if file.content_type != "application/pdf":
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Only PDF files are supported.",
             )
 
@@ -83,7 +83,7 @@ def _make_app() -> FastAPI:
 
         if not pdf_bytes.startswith(b"%PDF"):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="The uploaded file is not a valid PDF.",
             )
 
@@ -91,7 +91,7 @@ def _make_app() -> FastAPI:
             text = extract_text_from_bytes(pdf_bytes)
         except Exception as exc:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Could not extract text from the PDF.",
             ) from exc
 

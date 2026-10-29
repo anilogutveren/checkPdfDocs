@@ -1,0 +1,98 @@
+{
+  "_description": "Expected values for the synthetic orders built by scripts/generate_sample_orders.py. Amounts are formatted exactly as printed in the PDFs.",
+  "orders": [
+    {
+      "file_name": "sample_order_transporter.pdf",
+      "page_count": 6,
+      "is_contract": true,
+      "fields": {
+        "buyer": "Musterfirma Facility GmbH",
+        "vehicle": "Musterauto Transporter Kastenwagen 315 D standard",
+        "model_code": "M0000001",
+        "drive": "RWD",
+        "order_date": "14.09.2026",
+        "framework_contract": "RV-0000-0001",
+        "signer": "Max Mustermann",
+        "deal_id": "bb39921b-27ef-5a54-8d87-3299beb8599f"
+      },
+      "totals": {
+        "list_sum": "67.757,00",
+        "discount_percent": "32",
+        "discount": "21.682,24",
+        "vehicle_net": "46.074,76",
+        "vehicle_vat": "8.754,20",
+        "transfer_net": "750,00",
+        "transfer_vat": "142,50",
+        "purchase_net": "46.824,76",
+        "purchase_vat": "8.896,70",
+        "purchase_gross": "55.721,46",
+        "payment_after_handover": "54.828,96",
+        "transfer_gross": "892,50"
+      },
+      "expected_checks": [false, true, true, true],
+      "expected_scores": {"heuristic_score": 0.75, "contract_score": 0.75, "confidence": 0.5, "is_contract": true}
+    },
+    {
+      "file_name": "sample_order_pickup.pdf",
+      "page_count": 6,
+      "is_contract": true,
+      "fields": {
+        "buyer": "Beispiel Logistik AG",
+        "vehicle": "Musterauto Pritsche Doppelkabine 319 D lang",
+        "model_code": "M0000002",
+        "drive": "AWD",
+        "order_date": "02.10.2026",
+        "framework_contract": "RV-0000-0002",
+        "signer": "Jonas Beispiel",
+        "deal_id": "77309e02-994f-56bd-8f93-f5542261b546"
+      },
+      "totals": {
+        "list_sum": "71.994,00",
+        "discount_percent": "25",
+        "discount": "17.998,50",
+        "vehicle_net": "53.995,50",
+        "vehicle_vat": "10.259,15",
+        "transfer_net": "890,00",
+        "transfer_vat": "169,10",
+        "purchase_net": "54.885,50",
+        "purchase_vat": "10.428,25",
+        "purchase_gross": "65.313,75",
+        "payment_after_handover": "64.254,65",
+        "transfer_gross": "1.059,10"
+      },
+      "expected_checks": [false, true, true, true],
+      "expected_scores": {"heuristic_score": 0.75, "contract_score": 0.75, "confidence": 0.5, "is_contract": true}
+    },
+    {
+      "file_name": "sample_order_minibus.pdf",
+      "page_count": 6,
+      "is_contract": true,
+      "fields": {
+        "buyer": "Testwerk Service GmbH",
+        "vehicle": "Musterauto Kleinbus Tourer 317 D 9-Sitzer",
+        "model_code": "M0000003",
+        "drive": "FWD",
+        "order_date": "21.10.2026",
+        "framework_contract": "RV-0000-0003",
+        "signer": "Lena Probe",
+        "deal_id": "98fdabeb-ca48-59c1-aa62-1f877c22985d"
+      },
+      "totals": {
+        "list_sum": "66.794,00",
+        "discount_percent": "18",
+        "discount": "12.022,92",
+        "vehicle_net": "54.771,08",
+        "vehicle_vat": "10.406,51",
+        "transfer_net": "650,00",
+        "transfer_vat": "123,50",
+        "purchase_net": "55.421,08",
+        "purchase_vat": "10.530,01",
+        "purchase_gross": "65.951,09",
+        "payment_after_handover": "65.177,59",
+        "transfer_gross": "773,50"
+      },
+      "expected_checks": [false, true, true, true],
+      "expected_scores": {"heuristic_score": 0.75, "contract_score": 0.75, "confidence": 0.5, "is_contract": true}
+    }
+  ]
+}
