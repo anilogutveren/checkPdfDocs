@@ -14,6 +14,13 @@ node_modules/
 frontend/dist/
 *.log
 
+# Documents are local-only; contract.pdf is the single committed fixture
+documents/*
+!documents/contract.pdf
+
+# Local MLflow file store
+mlruns/
+
 # Environment / secrets
 .env
 .env.*
